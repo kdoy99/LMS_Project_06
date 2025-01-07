@@ -103,14 +103,14 @@ void * handle_clnt(void * arg)
     string name_list = "[접속한 유저]\n";
 
     name_len = read(clnt_sock, name, sizeof(name)); // 유저 이름 받아옴
-    list[clnt_cnt] = name; // 받아온 유저 이름 리스트에 집어넣기
+    list[clnt_cnt-1] = name; // 받아온 유저 이름 리스트에 집어넣기
     
-    for (int j = 0; j <= clnt_cnt; j++)
+    for (int j = 0; j < clnt_cnt; j++)
     {
         name_list = name_list + list[j] + "\n";
     }
     
-
+    cout << "clnt_cnt : " << clnt_cnt << endl;
     cout << name_list << endl;
 
     while ((str_len=read(clnt_sock, msg, sizeof(msg)))!=0)
