@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
         exit(1);
     }
     
-    sprintf(name, "[%s]", argv[3]);
+    sprintf(name, "[%s]>>", argv[3]);
     sock=socket(PF_INET, SOCK_STREAM, 0);
     
     // 디폴트 설정
@@ -46,6 +46,7 @@ int main(int argc, char *argv[])
     }
     
     // 가변 설정
+    write(sock, argv[3], strlen(argv[3])); // 접속한 닉네임 정보 보내기
     pthread_create(&snd_thread, NULL, send_msg, (void*)&sock);
     pthread_create(&rcv_thread, NULL, recv_msg, (void*)&sock);
     pthread_join(snd_thread, &thread_return);
@@ -67,9 +68,15 @@ void * send_msg(void * arg)
             close(sock);
             exit(0);
         }
-        if (!strcmp(msg, "/user"))
+        // if (!strcmp(msg, "/user\n"))
+        // {
+        //     write(sock, msg, strlen(msg));
+        // }
+        if (!strcmp(msg, "shit\n"))
         {
-            write(sock, msg, strlen(msg));
+            strcpy(msg, "sxxt\n");
+            sprintf(name_msg, "%s %s", name, msg);
+            write(sock, name_msg, strlen(name_msg));
         }
         else
         {

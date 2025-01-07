@@ -20,12 +20,35 @@ int clnt_cnt = 0; // 접속한 클라이언트 개수
 int clnt_socks[MAX_CLNT];
 pthread_mutex_t mutx;
 
+// class List
+// {
+//     private:
+//         int i=0;
+//         char name_list[10000];
+//         char* total_list[1];
+//     public:
+//         char* userList(char* list[]);
+// };
+
+// char* List::userList(char* list[])
+// {
+//     for (i = 0; i <= clnt_cnt; i++)
+//     {
+//         strcat(name_list, list[i]);
+//         strcat(name_list, "\n");
+//     }
+//     total_list[0] = name_list ;
+//     return (char*)total_list[0];
+// }
+
+
 int main(int argc, char *argv[])
 {
     int serv_sock, clnt_sock;
     struct sockaddr_in serv_adr, clnt_adr;
     socklen_t clnt_adr_sz;
     pthread_t t_id;
+    
     if (argc!=2)
     {
         printf("Usage : %s <port>\n", argv[0]);
@@ -73,13 +96,28 @@ void * handle_clnt(void * arg)
     int clnt_sock=*((int*)arg);
     int str_len=0, i;
     char msg[BUF_SIZE];
-    char list[20] = "<접속한 유저>";
+    char* list[MAX_CLNT]; // 접속한 유저 명단
+    char name[100]; // 접속한 유저 이름 받아올 곳
+    int name_len = 0; // 접속한 유저 이름 길이
+    // List user; // 유저 관련 클래스
+    string name_list = "[접속한 유저]\n";
+
+    name_len = read(clnt_sock, name, sizeof(name)); // 유저 이름 받아옴
+    list[clnt_cnt] = name; // 받아온 유저 이름 리스트에 집어넣기
     
+    for (int j = 0; j <= clnt_cnt; j++)
+    {
+        name_list = name_list + list[j] + "\n";
+    }
+    
+
+    cout << name_list << endl;
+
     while ((str_len=read(clnt_sock, msg, sizeof(msg)))!=0)
     {
         if (!strcmp(msg, "/user"))
         {
-            send_msg(list, BUF_SIZE);
+            // send_msg(user.userList(list), strlen(user.userList(list)));
         }
         else
         {
@@ -94,6 +132,7 @@ void * handle_clnt(void * arg)
             while (i++<clnt_cnt-1) // 클라 2개 이상일 때만 작동
             {
                 clnt_socks[i]=clnt_socks[i+1]; // 빈 자리에 들어감
+                list[i] = list[i+1]; // 접속 유저 이름도 옮겨줌
             }
             break;
         }
