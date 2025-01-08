@@ -84,7 +84,7 @@ void * handle_clnt(void * arg)
 
     if (clnt_cnt > 0) // 클라이언트가 최소 하나라도 접속 중일때
     {
-        user_list[clnt_cnt - 1] = name; // 받아온 유저 이름 리스트에 집어넣기
+        user_list[clnt_cnt - 1] = strtok(name, ">>"); // 받아온 유저 이름 리스트에 집어넣기
         pthread_mutex_lock(&mutx);
         user_list[clnt_cnt - 1] = new char[strlen(name) + 1];
         strcpy(user_list[clnt_cnt - 1], name);
@@ -95,30 +95,46 @@ void * handle_clnt(void * arg)
         cout << "현재 접속중인 클라이언트 없음" << endl;
     }
 
-    
-    
-    
-
     while ((str_len=read(clnt_sock, msg, sizeof(msg)))!=0)
     {
         msg[str_len] = '\0';
-        // /user 라는 메세지 받으면 유저 명단수 보내주는 조건문
+        // /quit 명령어, 채팅창 종료 및 모두에게 종료 메시지 전송
         if (strstr(msg, "/quit") != NULL)
         {
             char quit_message[BUF_SIZE] = {0};
+            // 접속 종료한 유저의 정보 출력
             pthread_mutex_lock(&mutx);
-            char* quit_user = strtok(msg, ">>");            
+            char* quit_user = strtok(msg, ">>"); // 접속 종료한 유저 이름 따오기
             snprintf(quit_message, sizeof(quit_message), "%s 님이 퇴장하셨습니다.\n", quit_user);
+            pthread_mutex_unlock(&mutx);
+
+            // 접속 종료한 유저의 소켓 압수 및 재정렬
+            pthread_mutex_lock(&mutx);
+            for (i = 0; i < clnt_cnt; i++)
+            {
+                if (clnt_socks[i] == clnt_sock) // 소켓 리스트에서 소켓 찾기
+                {
+                    while (i < clnt_cnt)
+                    {
+                        clnt_socks[i] = clnt_socks[i+1];
+                        user_list[i] = user_list[i+1];
+                        i++;
+                    }
+                    break;
+                }
+            }
+            clnt_cnt--;
             pthread_mutex_unlock(&mutx);
             send_msg(quit_message, strlen(quit_message));
         }
+        // /user 라는 메세지 받으면 유저 명단수 보내주는 조건문
         else if (strstr(msg, "/user") != NULL)
         {
             string name_list = "[접속한 유저]\n";
             pthread_mutex_lock(&mutx);
-            for (int j = 0; j < clnt_cnt; j++) // 클라이언트 수에 따라 반복하고, string에 char*형 배열에 담긴걸 합쳐서 보냄
+            for (i = 0; i < clnt_cnt; i++) // 클라이언트 수에 따라 반복하고, string에 char*형 배열에 담긴걸 합쳐서 보냄
             {
-                name_list += user_list[j];
+                name_list += user_list[i];
                 name_list += "\n";
             }
             pthread_mutex_unlock(&mutx);
@@ -129,23 +145,7 @@ void * handle_clnt(void * arg)
             send_msg(msg, str_len);
         }
     }
-    pthread_mutex_lock(&mutx); // 접속 끊었을 때 동작
-    for (i = 0; i < clnt_cnt; i++) // 접속 끊은 클라이언트가 있으면 그 자리 다음 순번이 대체하는 로직
-    {
-        if (clnt_sock==clnt_socks[i])
-        {
-            while (i++<clnt_cnt-1) // 클라 2개 이상일 때만 작동
-            {
-                clnt_socks[i]=clnt_socks[i+1]; // 빈 자리에 들어감
-                user_list[i] = user_list[i+1]; // 접속 유저 이름도 옮겨줌
-            }
-            break;
-        }
-    }
-    clnt_cnt--;
-
     delete[] user_list[clnt_cnt];
-    pthread_mutex_unlock(&mutx);
     close(clnt_sock);
     return NULL;
 }

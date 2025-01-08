@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
     }
     
     // 가변 설정
-    write(sock, argv[3], strlen(argv[3])); // 접속한 닉네임 정보 보내기
+    write(sock, name, strlen(name)); // 접속한 닉네임 정보 보내기
     pthread_create(&snd_thread, NULL, send_msg, (void*)&sock);
     pthread_create(&rcv_thread, NULL, recv_msg, (void*)&sock);
     pthread_join(snd_thread, &thread_return);
@@ -59,19 +59,34 @@ void * send_msg(void * arg)
 {
     int sock=*((int*)arg);
     char name_msg[NAME_SIZE+BUF_SIZE];
-    
+    cout << "DY톡에 오신걸 환영합니다 " << name << "님!" << endl;
+    cout << "명령어 확인 : /help" << endl;
     while (1)
     {
         fgets(msg, BUF_SIZE, stdin);
-        if (!strcmp(msg, "/quit\n"))
+        if (!strcmp(msg, "/help\n"))
+        {
+            cout << "/quit : 채팅방을 종료합니다." << endl;
+            cout << "/direct : 접속한 유저를 선택하여 다이렉트 메시지를 보낼 수 있습니다." << endl;
+            cout << "/group : 접속한 유저를 초대하여 단체 채팅방을 만들 수 있습니다." << endl;
+            cout << "/user : 현재 접속한 유저 정보를 확인합니다." << endl; // 조건 3. 접속한 유저 확인 (서버에 있음)
+        }
+        else if (!strcmp(msg, "/quit\n")) // 종료
         {
             sprintf(name_msg, "%s %s", name, msg);
             write(sock, name_msg, strlen(name_msg));
-            sleep(3); // 바로 종료 x
             close(sock);
             exit(0);
         }
-        else if (!strcmp(msg, "shit\n"))
+        else if (!strcmp(msg, "/direct\n")) // 조건 4. 다이렉트 메시지
+        {
+            
+        }
+        else if (!strcmp(msg, "/group\n")) // 조건 5. 단체 채팅방
+        {
+            
+        }
+        else if (!strcmp(msg, "shit\n")) // 조건 6. 비속어 검열 (임시)
         {
             strcpy(msg, "sxxt\n");
             sprintf(name_msg, "%s %s", name, msg);
