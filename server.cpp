@@ -107,9 +107,7 @@ void * handle_clnt(void * arg)
         {
             char quit_message[BUF_SIZE] = {0};
             pthread_mutex_lock(&mutx);
-            cout << msg << endl;
             char* quit_user = strtok(msg, ">>");            
-            cout << quit_user << endl;
             snprintf(quit_message, sizeof(quit_message), "%s 님이 퇴장하셨습니다.\n", quit_user);
             pthread_mutex_unlock(&mutx);
             send_msg(quit_message, strlen(quit_message));
