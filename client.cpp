@@ -63,16 +63,15 @@ void * send_msg(void * arg)
     while (1)
     {
         fgets(msg, BUF_SIZE, stdin);
-        if (!strcmp(msg, "q\n")||!strcmp(msg,"Q\n"))
+        if (!strcmp(msg, "/quit\n"))
         {
+            sprintf(name_msg, "%s %s", name, msg);
+            write(sock, name_msg, strlen(name_msg));
+            sleep(3); // 바로 종료 x
             close(sock);
             exit(0);
         }
-        // if (!strcmp(msg, "/user\n"))
-        // {
-        //     write(sock, msg, strlen(msg));
-        // }
-        if (!strcmp(msg, "shit\n"))
+        else if (!strcmp(msg, "shit\n"))
         {
             strcpy(msg, "sxxt\n");
             sprintf(name_msg, "%s %s", name, msg);

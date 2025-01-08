@@ -103,7 +103,18 @@ void * handle_clnt(void * arg)
     {
         msg[str_len] = '\0';
         // /user 라는 메세지 받으면 유저 명단수 보내주는 조건문
-        if (!strcmp(msg, "/user\n"))
+        if (strstr(msg, "/quit") != NULL)
+        {
+            char quit_message[BUF_SIZE] = {0};
+            pthread_mutex_lock(&mutx);
+            cout << msg << endl;
+            char* quit_user = strtok(msg, ">>");            
+            cout << quit_user << endl;
+            snprintf(quit_message, sizeof(quit_message), "%s 님이 퇴장하셨습니다.\n", quit_user);
+            pthread_mutex_unlock(&mutx);
+            send_msg(quit_message, strlen(quit_message));
+        }
+        else if (strstr(msg, "/user") != NULL)
         {
             string name_list = "[접속한 유저]\n";
             pthread_mutex_lock(&mutx);
@@ -114,8 +125,6 @@ void * handle_clnt(void * arg)
             }
             pthread_mutex_unlock(&mutx);
             write(clnt_sock, name_list.c_str(), name_list.length());
-            cout << "clnt_cnt : " << clnt_cnt << endl;
-            cout << name_list << endl;
         }
         else
         {
