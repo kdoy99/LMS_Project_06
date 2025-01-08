@@ -18,29 +18,8 @@ void error_handling(string msg);
 
 int clnt_cnt = 0; // 접속한 클라이언트 개수
 int clnt_socks[MAX_CLNT];
+char * user_list[MAX_CLNT]; // 접속한 유저 명단
 pthread_mutex_t mutx;
-
-// class List
-// {
-//     private:
-//         int i=0;
-//         char name_list[10000];
-//         char* total_list[1];
-//     public:
-//         char* userList(char* list[]);
-// };
-
-// char* List::userList(char* list[])
-// {
-//     for (i = 0; i <= clnt_cnt; i++)
-//     {
-//         strcat(name_list, list[i]);
-//         strcat(name_list, "\n");
-//     }
-//     total_list[0] = name_list ;
-//     return (char*)total_list[0];
-// }
-
 
 int main(int argc, char *argv[])
 {
@@ -96,28 +75,47 @@ void * handle_clnt(void * arg)
     int clnt_sock=*((int*)arg);
     int str_len=0, i;
     char msg[BUF_SIZE];
-    char* list[MAX_CLNT]; // 접속한 유저 명단
     char name[100]; // 접속한 유저 이름 받아올 곳
     int name_len = 0; // 접속한 유저 이름 길이
-    // List user; // 유저 관련 클래스
-    string name_list = "[접속한 유저]\n";
 
+    // 유저 이름 읽어오기
     name_len = read(clnt_sock, name, sizeof(name)); // 유저 이름 받아옴
-    list[clnt_cnt-1] = name; // 받아온 유저 이름 리스트에 집어넣기
-    
-    for (int j = 0; j < clnt_cnt; j++)
+    name[name_len] = '\0';
+
+    if (clnt_cnt > 0) // 클라이언트가 최소 하나라도 접속 중일때
     {
-        name_list = name_list + list[j] + "\n";
+        user_list[clnt_cnt - 1] = name; // 받아온 유저 이름 리스트에 집어넣기
+        pthread_mutex_lock(&mutx);
+        user_list[clnt_cnt - 1] = new char[strlen(name) + 1];
+        strcpy(user_list[clnt_cnt - 1], name);
+        pthread_mutex_unlock(&mutx);
     }
+    else // 접속중인 클라이언트 X
+    {
+        cout << "현재 접속중인 클라이언트 없음" << endl;
+    }
+
     
-    cout << "clnt_cnt : " << clnt_cnt << endl;
-    cout << name_list << endl;
+    
+    
 
     while ((str_len=read(clnt_sock, msg, sizeof(msg)))!=0)
     {
-        if (!strcmp(msg, "/user"))
+        msg[str_len] = '\0';
+        // /user 라는 메세지 받으면 유저 명단수 보내주는 조건문
+        if (!strcmp(msg, "/user\n"))
         {
-            // send_msg(user.userList(list), strlen(user.userList(list)));
+            string name_list = "[접속한 유저]\n";
+            pthread_mutex_lock(&mutx);
+            for (int j = 0; j < clnt_cnt; j++) // 클라이언트 수에 따라 반복하고, string에 char*형 배열에 담긴걸 합쳐서 보냄
+            {
+                name_list += user_list[j];
+                name_list += "\n";
+            }
+            pthread_mutex_unlock(&mutx);
+            write(clnt_sock, name_list.c_str(), name_list.length());
+            cout << "clnt_cnt : " << clnt_cnt << endl;
+            cout << name_list << endl;
         }
         else
         {
@@ -132,12 +130,14 @@ void * handle_clnt(void * arg)
             while (i++<clnt_cnt-1) // 클라 2개 이상일 때만 작동
             {
                 clnt_socks[i]=clnt_socks[i+1]; // 빈 자리에 들어감
-                list[i] = list[i+1]; // 접속 유저 이름도 옮겨줌
+                user_list[i] = user_list[i+1]; // 접속 유저 이름도 옮겨줌
             }
             break;
         }
     }
     clnt_cnt--;
+
+    delete[] user_list[clnt_cnt];
     pthread_mutex_unlock(&mutx);
     close(clnt_sock);
     return NULL;
