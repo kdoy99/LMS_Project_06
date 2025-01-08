@@ -128,7 +128,7 @@ void * handle_clnt(void * arg)
             send_msg(quit_message, strlen(quit_message));
         }
         // /user 라는 메세지 받으면 유저 명단수 보내주는 조건문
-        else if (strstr(msg, "/user") != NULL)
+        else if (!strncmp(msg, "/user", 5))
         {
             string name_list = "[접속한 유저]\n";
             pthread_mutex_lock(&mutx);
@@ -140,6 +140,31 @@ void * handle_clnt(void * arg)
             pthread_mutex_unlock(&mutx);
             write(clnt_sock, name_list.c_str(), name_list.length());
         }
+        // /direct 라는 메세지 받으면 지정한 유저에게 메시지 보내는 조건문
+        else if (!strncmp(msg, "(DM)", 4))
+        {
+            pthread_mutex_lock(&mutx);
+            char * dm = msg + 4;
+            string dm_name = strtok(dm, ">>");
+            string dm_message = strtok(NULL, "\n");
+            
+            for (i = 0; i < clnt_cnt; i++)
+            {
+                if (dm_name == user_list[i])
+                {
+                    cout << "dm 전송완료!" << endl;
+                    write(clnt_socks[i], dm_message.c_str(), dm_message.length());
+                }
+                else
+                {
+                    char failed_message[BUF_SIZE];
+                    sprintf(failed_message, "%s은(는) 존재하지 않는 유저입니다.", dm_name.c_str());
+                    write(clnt_sock, failed_message, strlen(failed_message));
+                }
+            }
+            pthread_mutex_unlock(&mutx);
+        }
+        
         else
         {
             send_msg(msg, str_len);
