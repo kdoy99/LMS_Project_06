@@ -84,7 +84,7 @@ void * handle_clnt(void * arg)
 
     if (clnt_cnt > 0) // 클라이언트가 최소 하나라도 접속 중일때
     {
-        user_list[clnt_cnt - 1] = strtok(name, ">>"); // 받아온 유저 이름 리스트에 집어넣기
+        user_list[clnt_cnt - 1] = name; // 받아온 유저 이름 리스트에 집어넣기
         pthread_mutex_lock(&mutx);
         user_list[clnt_cnt - 1] = new char[strlen(name) + 1];
         strcpy(user_list[clnt_cnt - 1], name);
@@ -104,7 +104,7 @@ void * handle_clnt(void * arg)
             char quit_message[BUF_SIZE] = {0};
             // 접속 종료한 유저의 정보 출력
             pthread_mutex_lock(&mutx);
-            char* quit_user = strtok(msg, ">>"); // 접속 종료한 유저 이름 따오기
+            char* quit_user = strtok(msg, " "); // 접속 종료한 유저 이름 따오기
             snprintf(quit_message, sizeof(quit_message), "%s 님이 퇴장하셨습니다.\n", quit_user);
             pthread_mutex_unlock(&mutx);
 
@@ -145,22 +145,27 @@ void * handle_clnt(void * arg)
         {
             pthread_mutex_lock(&mutx);
             char * dm = msg + 4;
-            string dm_name = strtok(dm, ">>");
-            string dm_message = strtok(NULL, "\n");
+            char * dm_name = strtok(dm, " ");
+            char * dm_message = strtok(NULL, "\n");
+            char dm_name_message[BUF_SIZE];
             
             for (i = 0; i < clnt_cnt; i++)
             {
-                if (dm_name == user_list[i])
+                if (!strcmp(dm_name, user_list[i]))
                 {
-                    cout << "dm 전송완료!" << endl;
-                    write(clnt_socks[i], dm_message.c_str(), dm_message.length());
+                    sprintf(dm_name_message, "(DM)%s %s\n", dm_name, dm_message);
+                    write(clnt_socks[i], dm_name_message, strlen(dm_name_message));
                 }
-                else
-                {
-                    char failed_message[BUF_SIZE];
-                    sprintf(failed_message, "%s은(는) 존재하지 않는 유저입니다.", dm_name.c_str());
-                    write(clnt_sock, failed_message, strlen(failed_message));
-                }
+                // else
+                // {
+                //     cout << "dm 전송실패!" << endl;
+                //     cout << dm_message << endl;
+                //     cout << dm_name << endl;
+                //     cout << user_list[i] << endl;
+                //     char failed_message[BUF_SIZE];
+                //     sprintf(failed_message, "%s은(는) 존재하지 않는 유저입니다.", dm_name);
+                //     write(clnt_sock, failed_message, strlen(failed_message));
+                // }
             }
             pthread_mutex_unlock(&mutx);
         }
