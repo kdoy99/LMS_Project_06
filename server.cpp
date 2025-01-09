@@ -9,6 +9,8 @@
 
 #define BUF_SIZE 100
 #define MAX_CLNT 256
+#define MAX_GROUP 100
+#define MAX_GROUP_USER 100
 
 using namespace std;
 
@@ -19,6 +21,8 @@ void error_handling(string msg);
 int clnt_cnt = 0; // 접속한 클라이언트 개수
 int clnt_socks[MAX_CLNT];
 char * user_list[MAX_CLNT]; // 접속한 유저 명단
+char * gm_name[MAX_GROUP] = {0,}; // 단체 채팅방 최대 개수
+char * gm_user[MAX_GROUP][MAX_GROUP_USER] = {0,}; // 최대 수용인원 100명
 pthread_mutex_t mutx;
 
 int main(int argc, char *argv[])
@@ -98,7 +102,7 @@ void * handle_clnt(void * arg)
     while ((str_len=read(clnt_sock, msg, sizeof(msg)))!=0)
     {
         msg[str_len] = '\0';
-        // /quit 명령어, 채팅창 종료 및 모두에게 종료 메시지 전송
+        // /quit 명령어, 채팅창 종료 및 모두에게 종료 메시지 전송 (완)
         if (strstr(msg, "/quit") != NULL)
         {
             char quit_message[BUF_SIZE] = {0};
@@ -127,7 +131,7 @@ void * handle_clnt(void * arg)
             pthread_mutex_unlock(&mutx);
             send_msg(quit_message, strlen(quit_message));
         }
-        // /user 라는 메세지 받으면 유저 명단수 보내주는 조건문
+        // /user 라는 메세지 받으면 유저 명단수 보내주는 조건문 (완)
         else if (!strncmp(msg, "/user", 5))
         {
             string name_list = "[접속한 유저]\n";
@@ -140,36 +144,72 @@ void * handle_clnt(void * arg)
             pthread_mutex_unlock(&mutx);
             write(clnt_sock, name_list.c_str(), name_list.length());
         }
-        // /direct 라는 메세지 받으면 지정한 유저에게 메시지 보내는 조건문
+        // /direct 라는 메세지 받으면 지정한 유저에게 메시지 보내는 조건문 (완)
         else if (!strncmp(msg, "(DM)", 4))
         {
             pthread_mutex_lock(&mutx);
             char * dm = msg + 4;
+            char * dm_from;
             char * dm_name = strtok(dm, " ");
             char * dm_message = strtok(NULL, "\n");
             char dm_name_message[BUF_SIZE];
             
-            for (i = 0; i < clnt_cnt; i++)
+            // 보낸 사람 이름 추출
+            for (int i = 0; i < clnt_cnt; i++)
+            {
+                if (clnt_sock == clnt_socks[i])
+                {
+                    dm_from = user_list[i];
+                }
+            }
+            
+            // DM 메시지 전송
+            for (int i = 0; i < clnt_cnt; i++)
             {
                 if (!strcmp(dm_name, user_list[i]))
                 {
-                    sprintf(dm_name_message, "(DM)%s %s\n", dm_name, dm_message);
+                    sprintf(dm_name_message, "(DM)%s >> %s %s\n", dm_from, dm_name, dm_message);
+                    write(clnt_sock, dm_name_message, strlen(dm_name_message));
                     write(clnt_socks[i], dm_name_message, strlen(dm_name_message));
                 }
-                // else
-                // {
-                //     cout << "dm 전송실패!" << endl;
-                //     cout << dm_message << endl;
-                //     cout << dm_name << endl;
-                //     cout << user_list[i] << endl;
-                //     char failed_message[BUF_SIZE];
-                //     sprintf(failed_message, "%s은(는) 존재하지 않는 유저입니다.", dm_name);
-                //     write(clnt_sock, failed_message, strlen(failed_message));
-                // }
+            }
+            // char failed_message[BUF_SIZE];
+            // sprintf(failed_message, "%s은(는) 존재하지 않는 유저입니다.\n", dm_name);
+            // write(clnt_sock, failed_message, strlen(failed_message));
+            pthread_mutex_unlock(&mutx);
+        }
+        // 그룹 채팅방
+        else if (!strncmp(msg, "(GM)", 4))
+        {
+            char * gm = msg + 4;
+            int group_user_count = 0;
+            string gm_message;
+            pthread_mutex_lock(&mutx);
+            // 이미 개설된 채팅방 있는지 체크
+            for (int i = 0; i < MAX_GROUP; i++)
+            {
+                if (!strcmp(gm_name[i],""))
+                {
+                    gm_name[i] = strtok(gm, " ");
+                    gm_message += gm_name[i];
+                    gm_message += "채팅방 개설 완료!\n";
+                    // 입력된 유저 이름 체크, 집어넣기
+                    for (int j = 0; j < MAX_GROUP_USER; j++)
+                    {
+                        if (strchr(gm, '\n') != NULL)
+                        {
+                            break;
+                        }
+                        gm_user[i][j] = strtok(NULL, " ");
+                        gm_message = gm_message + gm_user[i][j] + "\n";                        
+                    }
+                    write(clnt_sock, gm_message.c_str(), gm_message.length());
+                    break;
+                }                
             }
             pthread_mutex_unlock(&mutx);
         }
-        
+        // 일반 메시지
         else
         {
             send_msg(msg, str_len);

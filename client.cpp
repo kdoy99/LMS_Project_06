@@ -69,7 +69,7 @@ void * send_msg(void * arg)
             cout << "/quit : 채팅방을 종료합니다." << endl;
             cout << "/user : 현재 접속한 유저 정보를 확인합니다." << endl;
             cout << "/direct <username> <message> : 접속한 유저를 선택하여 다이렉트 메시지를 보낼 수 있습니다." << endl;
-            cout << "/group <username>, ~ : 접속한 유저를 초대하여 단체 채팅방을 만들 수 있습니다." << endl;
+            cout << "/group <groupname> <username>, ~ : 접속한 유저를 초대하여 단체 채팅방을 만들 수 있습니다." << endl;
         }
         else if (!strncmp(msg, "/quit", 5)) // 종료 (완)
         {
@@ -90,9 +90,14 @@ void * send_msg(void * arg)
             sprintf(name_msg, "(DM)[%s] %s", dm_name, dm_content);
             write(sock, name_msg, strlen(name_msg));
         }
-        else if (!strncmp(msg, "/group ", 7)) // 조건 5. 단체 채팅방
+        else if (!strncmp(msg, "/group ", 7)) // 조건 5. 단체 채팅방 (100명까지)
         {
-            
+            char * gm = msg + 7;
+            char * group_name = strtok(gm, " ");
+            char * group_user = strtok(NULL, "\n");
+            sprintf(name_msg, "(GM)[%s] %s", group_name, group_user);
+            cout << name_msg << endl;
+            write(sock, name_msg, strlen(name_msg));
         }
         else if (!strcmp(msg, "shit\n")) // 조건 6. 비속어 검열 (임시)
         {
