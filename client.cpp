@@ -70,6 +70,7 @@ void * send_msg(void * arg)
             cout << "/user : 현재 접속한 유저 정보를 확인합니다." << endl;
             cout << "/direct <username> <message> : 접속한 유저를 선택하여 다이렉트 메시지를 보낼 수 있습니다." << endl;
             cout << "/group <groupname> <username>, ~ : 접속한 유저를 초대하여 단체 채팅방을 만들 수 있습니다." << endl;
+            cout << "/g <groupname> <message> : 그룹 채팅방에 메시지를 보냅니다. (초대된 방 한정)" << endl;
         }
         else if (!strncmp(msg, "/quit", 5)) // 종료 (완)
         {
@@ -90,15 +91,22 @@ void * send_msg(void * arg)
             sprintf(name_msg, "(DM)[%s] %s", dm_name, dm_content);
             write(sock, name_msg, strlen(name_msg));
         }
-        else if (!strncmp(msg, "/group ", 7)) // 조건 5. 단체 채팅방 (100명까지)
+        else if (!strncmp(msg, "/group ", 7)) // 조건 5-1. 단체 채팅방 생성 (100명까지)
         {
             char * gm = msg + 7;
             char * group_name = strtok(gm, " ");
             char * group_user = strtok(NULL, "\n");
             sprintf(name_msg, "(GM)[%s] %s", group_name, group_user);
-            cout << name_msg << endl;
             write(sock, name_msg, strlen(name_msg));
         }
+        else if (!strncmp(msg, "/g ", 3)) // 조건 5-2. 단체 채팅방에 메시지 쓰기
+        {
+            char * gc = msg + 3;
+            char * gc_name = strtok(gc, " ");
+            char * gc_message = strtok(NULL, "\n");
+            sprintf(name_msg, "(GC)[%s] %s", gc_name, gc_message);
+            write(sock, name_msg, strlen(name_msg));
+        }        
         else if (!strcmp(msg, "shit\n")) // 조건 6. 비속어 검열 (임시)
         {
             strcpy(msg, "sxxt\n");

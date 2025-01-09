@@ -178,37 +178,114 @@ void * handle_clnt(void * arg)
             // write(clnt_sock, failed_message, strlen(failed_message));
             pthread_mutex_unlock(&mutx);
         }
-        // 그룹 채팅방
+        // 그룹 채팅방 생성
         else if (!strncmp(msg, "(GM)", 4))
         {
             char * gm = msg + 4;
-            int group_user_count = 0;
             string gm_message;
             pthread_mutex_lock(&mutx);
             // 이미 개설된 채팅방 있는지 체크
             for (int i = 0; i < MAX_GROUP; i++)
             {
-                if (!gm_name[i])
+                if (!gm_name[i]) // 비어있는 배열일 때 여기에 집어넣음
                 {
                     gm_name[i] = new char[BUF_SIZE];
-                    strcpy(gm_name[i], strtok(gm, " "));
+                    strcpy(gm_name[i], strtok(gm, " ")); // 채팅방 이름 잘라서 name에 집어넣음
                     gm_message += gm_name[i];
                     gm_message += "채팅방 개설 완료!\n";
                     // 입력된 유저 이름 체크, 집어넣기
                     for (int j = 0; j < MAX_GROUP_USER; j++)
                     {
-                        char * temp_user = strtok(NULL, " ");
-                        if (!temp_user)
+                        char * temp_user = strtok(NULL, " "); // user 명단 반복문으로 잘라서 담음
+                        if (!temp_user) // \n 만나서 자를게 없을 때
                         {
-                            break;
+                            break; // 반복문 중단
                         }
                         gm_user[i][j] = new char[BUF_SIZE];
-                        strcpy(gm_user[i][j], temp_user);
-                        gm_message = gm_message + gm_user[i][j] + "\n";                        
+                        strcpy(gm_user[i][j], temp_user); // 유저 명단에 자른 거 담아줌
+                        gm_message = gm_message + gm_user[i][j] + "\n"; // 채팅방 이름, 유저 명단 취합해서 string에 한꺼번에 담아줌         
                     }
                     write(clnt_sock, gm_message.c_str(), gm_message.length());
                     break;
                 }                
+            }
+            pthread_mutex_unlock(&mutx);
+        }
+        // 그룹 채팅방에 메시지 보내기
+        else if (!strncmp(msg, "(GC)", 4))
+        {
+            char * gc = msg + 4;
+            char * gc_from = nullptr;
+            char * gc_name = strtok(gc, " ");
+            char * gc_content = strtok(nullptr, "\n");
+            bool access = false; // 권한 확인용 변수
+            string gc_message;
+
+            pthread_mutex_lock(&mutx);
+            // 보낸 사람 이름 확인
+            for (int i = 0; i < clnt_cnt; i++)
+            {
+                if (clnt_sock == clnt_socks[i])
+                {
+                    gc_from = user_list[i];
+                }                
+            }
+            // 메시지 취합
+            gc_message += gc_name;
+            gc_message += " ";
+            gc_message += gc_from;
+            gc_message += ">>";
+            gc_message += gc_content;
+            gc_message += "\n";
+
+            cout << gc_message << endl;
+            cout << gm_name[0] << endl;
+            cout << gm_user[0][0] << endl;
+            cout << gm_user[0][1] << endl;      
+            // 단체 채팅방에 초대된 사람이 보내는 건지 확인
+            for (int i = 0; i < MAX_GROUP; i++)
+            {
+                if (gm_name[i] && !strcmp(gm_name[i], gc_name))
+                {
+                    for (int j = 0; j < MAX_GROUP_USER; j++)
+                    {
+                        if (gm_user[i][j] && !strstr(gc_from, gm_user[i][j]))
+                        {
+                            access = true;
+                            break;
+                        }
+                    }
+                    break;
+                }                                
+            }            
+            // 권한 있는 사람이 보내는 게 맞다면, 초대되어있고 접속 중인 유저에게 메시지 보내기
+            if (access)
+            {
+                for (int i = 0; i < MAX_GROUP; i++)
+                {
+                    if (gm_name[i] && !strcmp(gc_name, gm_name[i]))
+                    {
+                        for (int j = 0; j < MAX_GROUP_USER; j++)
+                        {
+                            if (gm_user[i][j])
+                            {
+                                for (int k = 0; k < clnt_cnt; k++)
+                                {
+                                    if (user_list[k] && !strstr(user_list[k], gm_user[i][j]))
+                                    {
+                                        write(clnt_socks[k], gc_message.c_str(), gc_message.length());
+                                    }                                
+                                }
+                            }
+                        
+                        }
+                    }
+                }
+            }
+            else
+            {
+                string no_access = "권한이 없습니다.\n";
+                write(clnt_sock, no_access.c_str(), no_access.length());
             }
             pthread_mutex_unlock(&mutx);
         }
