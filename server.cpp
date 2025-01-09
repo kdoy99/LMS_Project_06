@@ -237,11 +237,7 @@ void * handle_clnt(void * arg)
             gc_message += ">>";
             gc_message += gc_content;
             gc_message += "\n";
-
-            cout << gc_message << endl;
-            cout << gm_name[0] << endl;
-            cout << gm_user[0][0] << endl;
-            cout << gm_user[0][1] << endl;      
+      
             // 단체 채팅방에 초대된 사람이 보내는 건지 확인
             for (int i = 0; i < MAX_GROUP; i++)
             {
@@ -277,7 +273,6 @@ void * handle_clnt(void * arg)
                                     }                                
                                 }
                             }
-                        
                         }
                     }
                 }
