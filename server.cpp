@@ -188,19 +188,22 @@ void * handle_clnt(void * arg)
             // 이미 개설된 채팅방 있는지 체크
             for (int i = 0; i < MAX_GROUP; i++)
             {
-                if (!strcmp(gm_name[i],""))
+                if (!gm_name[i])
                 {
-                    gm_name[i] = strtok(gm, " ");
+                    gm_name[i] = new char[BUF_SIZE];
+                    strcpy(gm_name[i], strtok(gm, " "));
                     gm_message += gm_name[i];
                     gm_message += "채팅방 개설 완료!\n";
                     // 입력된 유저 이름 체크, 집어넣기
                     for (int j = 0; j < MAX_GROUP_USER; j++)
                     {
-                        if (strchr(gm, '\n') != NULL)
+                        char * temp_user = strtok(NULL, " ");
+                        if (!temp_user)
                         {
                             break;
                         }
-                        gm_user[i][j] = strtok(NULL, " ");
+                        gm_user[i][j] = new char[BUF_SIZE];
+                        strcpy(gm_user[i][j], temp_user);
                         gm_message = gm_message + gm_user[i][j] + "\n";                        
                     }
                     write(clnt_sock, gm_message.c_str(), gm_message.length());
@@ -216,6 +219,22 @@ void * handle_clnt(void * arg)
         }
     }
     delete[] user_list[clnt_cnt];
+    for (i = 0; i < MAX_GROUP; i++)
+    {
+        if (gm_name[i])
+        {
+            delete[] gm_name[i];
+            gm_name[i] = nullptr;
+        }
+        for (int j = 0; j < MAX_GROUP_USER; j++)
+        {
+            if (gm_user[i][j])
+            {
+                delete[] gm_user[i][j];
+                gm_user[i][j] = nullptr;
+            }
+        }
+    }
     close(clnt_sock);
     return NULL;
 }
