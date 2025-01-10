@@ -107,12 +107,6 @@ void * send_msg(void * arg)
             sprintf(name_msg, "(GC)[%s] %s", gc_name, gc_message);
             write(sock, name_msg, strlen(name_msg));
         }        
-        else if (!strcmp(msg, "shit\n")) // 조건 6. 비속어 검열 (임시)
-        {
-            strcpy(msg, "sxxt\n");
-            sprintf(name_msg, "%s %s", name, msg);
-            write(sock, name_msg, strlen(name_msg));
-        }
         else
         {
             sprintf(name_msg, "%s %s", name, msg);

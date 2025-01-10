@@ -102,8 +102,14 @@ void * handle_clnt(void * arg)
     while ((str_len=read(clnt_sock, msg, sizeof(msg)))!=0)
     {
         msg[str_len] = '\0';
+        // 비속어 필터링
+        if (strstr(msg, "shit") != NULL || strstr(msg, "fuck"))
+        {
+            char filtering_message[BUF_SIZE] = "검열된 메시지입니다.\n";
+            send_msg(filtering_message, strlen(filtering_message));
+        }
         // /quit 명령어, 채팅창 종료 및 모두에게 종료 메시지 전송 (완)
-        if (strstr(msg, "/quit") != NULL)
+        else if (strstr(msg, "/quit") != NULL)
         {
             char quit_message[BUF_SIZE] = {0};
             // 접속 종료한 유저의 정보 출력
@@ -196,19 +202,19 @@ void * handle_clnt(void * arg)
                     // 입력된 유저 이름 체크, 집어넣기
                     for (int j = 0; j < MAX_GROUP_USER; j++)
                     {
+                        gm_user[i][j] = new char[BUF_SIZE];
                         char * temp_user = strtok(NULL, " "); // user 명단 반복문으로 잘라서 담음
                         if (!temp_user) // \n 만나서 자를게 없을 때
                         {
                             break; // 반복문 중단
-                        }
-                        gm_user[i][j] = new char[BUF_SIZE];
+                        }                        
                         sprintf(gm_user[i][j], "[%s]", temp_user); // 유저 명단에 자른 거 담아줌
-                        gm_message = gm_message + gm_user[i][j] + "\n"; // 채팅방 이름, 유저 명단 취합해서 string에 한꺼번에 담아줌         
+                        gm_message = gm_message + gm_user[i][j] + "\n"; // 채팅방 이름, 유저 명단 취합해서 string에 한꺼번에 담아줌        
                     }
-                    write(clnt_sock, gm_message.c_str(), gm_message.length());
                     break;
                 }                
             }
+            write(clnt_sock, gm_message.c_str(), gm_message.length());
             pthread_mutex_unlock(&mutx);
         }
         // 그룹 채팅방에 메시지 보내기
