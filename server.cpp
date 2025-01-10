@@ -202,7 +202,7 @@ void * handle_clnt(void * arg)
                             break; // 반복문 중단
                         }
                         gm_user[i][j] = new char[BUF_SIZE];
-                        strcpy(gm_user[i][j], temp_user); // 유저 명단에 자른 거 담아줌
+                        sprintf(gm_user[i][j], "[%s]", temp_user); // 유저 명단에 자른 거 담아줌
                         gm_message = gm_message + gm_user[i][j] + "\n"; // 채팅방 이름, 유저 명단 취합해서 string에 한꺼번에 담아줌         
                     }
                     write(clnt_sock, gm_message.c_str(), gm_message.length());
@@ -215,7 +215,7 @@ void * handle_clnt(void * arg)
         else if (!strncmp(msg, "(GC)", 4))
         {
             char * gc = msg + 4;
-            char * gc_from = nullptr;
+            char gc_from[BUF_SIZE];
             char * gc_name = strtok(gc, " ");
             char * gc_content = strtok(nullptr, "\n");
             bool access = false; // 권한 확인용 변수
@@ -227,8 +227,9 @@ void * handle_clnt(void * arg)
             {
                 if (clnt_sock == clnt_socks[i])
                 {
-                    gc_from = user_list[i];
-                }                
+                    sprintf(gc_from, "%s", user_list[i]);
+                    break;
+                }
             }
             // 메시지 취합
             gc_message += gc_name;
@@ -236,8 +237,7 @@ void * handle_clnt(void * arg)
             gc_message += gc_from;
             gc_message += ">>";
             gc_message += gc_content;
-            gc_message += "\n";
-      
+            gc_message += "\n";            
             // 단체 채팅방에 초대된 사람이 보내는 건지 확인
             for (int i = 0; i < MAX_GROUP; i++)
             {
@@ -245,7 +245,7 @@ void * handle_clnt(void * arg)
                 {
                     for (int j = 0; j < MAX_GROUP_USER; j++)
                     {
-                        if (gm_user[i][j] && !strstr(gc_from, gm_user[i][j]))
+                        if (gm_user[i][j] && !strcmp(gc_from, gm_user[i][j]))
                         {
                             access = true;
                             break;
@@ -253,7 +253,7 @@ void * handle_clnt(void * arg)
                     }
                     break;
                 }                                
-            }            
+            }
             // 권한 있는 사람이 보내는 게 맞다면, 초대되어있고 접속 중인 유저에게 메시지 보내기
             if (access)
             {
@@ -267,7 +267,7 @@ void * handle_clnt(void * arg)
                             {
                                 for (int k = 0; k < clnt_cnt; k++)
                                 {
-                                    if (user_list[k] && !strstr(user_list[k], gm_user[i][j]))
+                                    if (user_list[k] && !strcmp(user_list[k], gm_user[i][j]))
                                     {
                                         write(clnt_socks[k], gc_message.c_str(), gc_message.length());
                                     }                                
